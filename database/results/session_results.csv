@@ -1,0 +1,4 @@
+timestamp,age_group,subject,question,selected_answer,correct_answer,is_correct,time_taken_seconds
+2025-12-29T16:20:46.041909,5-9,Math,2 + 3 = ?,B,B,True,7.58
+2025-12-29T16:20:50.745639,5-9,Math,5 - 2 = ?,B,B,True,4.69
+2025-12-29T16:20:54.572435,5-9,Math,3 + 4 = ?,B,B,True,3.81

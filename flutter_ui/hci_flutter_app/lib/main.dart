@@ -1,121 +1,287 @@
 import 'package:flutter/material.dart';
+import 'services/backend_service.dart';
+
 
 void main() {
-  runApp(const MyApp());
+  runApp(const HCIApp());
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class HCIApp extends StatelessWidget {
+  const HCIApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // TRY THIS: Try running your application with "flutter run". You'll see
-        // the application has a purple toolbar. Then, without quitting the app,
-        // try changing the seedColor in the colorScheme below to Colors.green
-        // and then invoke "hot reload" (save your changes or press the "hot
-        // reload" button in a Flutter-supported IDE, or press "r" if you used
-        // the command line to start the app).
-        //
-        // Notice that the counter didn't reset back to zero; the application
-        // state is not lost during the reload. To reset the state, use hot
-        // restart instead.
-        //
-        // This works for code too, not just values: Most code changes can be
-        // tested with just a hot reload.
-        colorScheme: .fromSeed(seedColor: Colors.deepPurple),
-      ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      debugShowCheckedModeBanner: false,
+      title: 'HCI Project',
+      theme: ThemeData(primarySwatch: Colors.indigo),
+      home: const HomeScreen(),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  final String title;
+/* =========================
+   HOME (Role Selection)
+   ========================= */
+class HomeScreen extends StatelessWidget {
+  const HomeScreen({super.key});
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text("Select Role")),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            ElevatedButton(
+              onPressed: () {
+                Navigator.push(context,
+                    MaterialPageRoute(builder: (_) => const TeacherScreen()));
+              },
+              child: const Text("Teacher"),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.push(context,
+                    MaterialPageRoute(builder: (_) => const StudentScreen()));
+              },
+              child: const Text("Student"),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+/* =========================
+   TEACHER SCREEN
+   ========================= */
+class TeacherScreen extends StatefulWidget {
+  const TeacherScreen({super.key});
 
-  void _incrementCounter() {
+  @override
+  State<TeacherScreen> createState() => _TeacherScreenState();
+}
+
+class _TeacherScreenState extends State<TeacherScreen> {
+  final List<String> ageGroups = ["5–9", "10–14", "15–20"];
+  final List<String> subjects = ["Math", "Science", "English"];
+
+  int ageIndex = 0;
+  int subjectIndex = 0;
+
+  void rotateAge(int direction) {
     setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
+      ageIndex = (ageIndex + direction) % ageGroups.length;
+      if (ageIndex < 0) ageIndex = ageGroups.length - 1;
+    });
+  }
+
+  void rotateSubject(int direction) {
+    setState(() {
+      subjectIndex = (subjectIndex + direction) % subjects.length;
+      if (subjectIndex < 0) subjectIndex = subjects.length - 1;
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
     return Scaffold(
-      appBar: AppBar(
-        // TRY THIS: Try changing the color here to a specific color (to
-        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-        // change color while the other colors stay the same.
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
-      ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
+      appBar: AppBar(title: const Text("Teacher Configuration")),
+      body: Padding(
+        padding: const EdgeInsets.all(24),
         child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          //
-          // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-          // action in the IDE, or press "p" in the console), to see the
-          // wireframe for each widget.
-          mainAxisAlignment: .center,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Text('You have pushed the button this many times:'),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
+            const Text(
+              "Rotate to Select Age Group",
+              style: TextStyle(fontSize: 20),
+            ),
+            const SizedBox(height: 10),
+
+            RotationCard(
+              label: ageGroups[ageIndex],
+              onLeft: () => rotateAge(-1),
+              onRight: () => rotateAge(1),
+            ),
+
+            const SizedBox(height: 40),
+
+            const Text(
+              "Rotate to Select Subject",
+              style: TextStyle(fontSize: 20),
+            ),
+            const SizedBox(height: 10),
+
+            RotationCard(
+              label: subjects[subjectIndex],
+              onLeft: () => rotateSubject(-1),
+              onRight: () => rotateSubject(1),
+            ),
+
+            const SizedBox(height: 50),
+
+            ElevatedButton(
+              onPressed: () async {
+                await BackendService.sendTeacherConfig(
+                  ageGroup: ageGroups[ageIndex],
+                  subject: subjects[subjectIndex],
+                );
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      "Sent to backend: ${ageGroups[ageIndex]} | ${subjects[subjectIndex]}",
+                    ),
+                  ),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.all(16),
+                textStyle: const TextStyle(fontSize: 18),
+              ),
+              child: const Text("Start Test"),
             ),
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
+    );
+  }
+}
+
+/* =========================
+   ROTATION CARD WIDGET
+   ========================= */
+class RotationCard extends StatelessWidget {
+  final String label;
+  final VoidCallback onLeft;
+  final VoidCallback onRight;
+
+  const RotationCard({
+    super.key,
+    required this.label,
+    required this.onLeft,
+    required this.onRight,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 4,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            IconButton(
+              icon: const Icon(Icons.rotate_left),
+              onPressed: onLeft,
+            ),
+            Text(
+              label,
+              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+            ),
+            IconButton(
+              icon: const Icon(Icons.rotate_right),
+              onPressed: onRight,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/* =========================
+   STUDENT SCREEN (unchanged)
+   ========================= */
+class StudentScreen extends StatefulWidget {
+  const StudentScreen({super.key});
+
+  @override
+  State<StudentScreen> createState() => _StudentScreenState();
+}
+
+class _StudentScreenState extends State<StudentScreen> {
+  String selectedAnswer = "";
+  int score = 0;
+
+  final String question = "2 + 3 = ?";
+  final Map<String, String> answers = {
+    "A": "4",
+    "B": "5",
+    "C": "6",
+  };
+  final String correctAnswer = "B";
+
+  void selectAnswer(String answer) {
+    setState(() {
+      selectedAnswer = answer;
+    });
+  }
+
+  void confirmAnswer() {
+    setState(() {
+      if (selectedAnswer == correctAnswer) {
+        score++;
+      }
+      selectedAnswer = "";
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text("Student Test")),
+      body: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text("Score: $score",
+                textAlign: TextAlign.right,
+                style:
+                    const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 20),
+            Card(
+              elevation: 4,
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Text(question,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                        fontSize: 26, fontWeight: FontWeight.bold)),
+              ),
+            ),
+            const SizedBox(height: 30),
+            ...answers.entries.map((e) => Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 6),
+                  child: GestureDetector(
+                    onTap: () => selectAnswer(e.key),
+                    child: Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: selectedAnswer == e.key
+                            ? Colors.indigo.shade200
+                            : Colors.grey.shade200,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text("${e.key}) ${e.value}",
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(fontSize: 22)),
+                    ),
+                  ),
+                )),
+            const Spacer(),
+            ElevatedButton(
+              onPressed: selectedAnswer.isEmpty ? null : confirmAnswer,
+              child: const Text("Confirm Answer"),
+            )
+          ],
+        ),
       ),
     );
   }

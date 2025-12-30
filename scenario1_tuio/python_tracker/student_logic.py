@@ -3,9 +3,40 @@ import pandas as pd
 import time
 from datetime import datetime
 import os
+import sys
+import unicodedata
+import socket, json
+
+UI_HOST = "127.0.0.1"
+UI_PORT = 51000
+
+ui_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+def ui_send(payload: dict):
+    ui_sock.sendall((json.dumps(payload) + "\n").encode())
+
 
 # =========================
-# PATH RESOLUTION (FIX)
+# GLOBAL STATE
+# =========================
+RUNNING = True
+
+def normalize(text):
+    if pd.isna(text):
+        return ""
+    text = str(text)
+    text = unicodedata.normalize("NFKD", text)
+    text = text.replace("–", "-").replace("—", "-")
+    text = text.replace("\u00a0", " ")
+    return text.strip().lower()
+
+def shutdown():
+    global RUNNING
+    RUNNING = False
+    print("\n[STUDENT] Shutting down cleanly...")
+    sys.exit(0)
+
+# =========================
+# PATHS
 # =========================
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.abspath(os.path.join(BASE_DIR, "..", ".."))
@@ -16,52 +47,63 @@ RESULTS_FILE = os.path.join(PROJECT_ROOT, "database", "results", "evaluation_log
 HOST = "127.0.0.1"
 PORT = 5007
 
-
-def normalize(text):
-    return str(text).strip().lower()
-
-
 print("[STUDENT] Service running (multi-session safe)")
 print(f"[DEBUG] Loading questions from: {DATA_FILE}")
 
-while True:
+while RUNNING:
     try:
         # =========================
-        # Wait for teacher config
+        # Receive teacher config
         # =========================
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server:
-            server.bind((HOST, PORT))
-            server.listen(1)
+        server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        server.bind((HOST, PORT))
+        server.listen(1)
+        server.settimeout(1.0)
 
-            print("[STUDENT] Waiting for teacher...")
-            conn, _ = server.accept()
+        print("[STUDENT] Waiting for teacher...")
 
-            with conn:
-                data = conn.recv(1024).decode().strip().splitlines()
+        while RUNNING:
+            try:
+                conn, _ = server.accept()
+                break
+            except socket.timeout:
+                continue
 
+        if not RUNNING:
+            shutdown()
+
+        with conn:
+            raw = conn.recv(1024).decode(errors="ignore")
+
+        server.close()
+
+        print("[DEBUG] Raw teacher message:", raw)
+
+        # =========================
+        # ROBUST parsing
+        # =========================
         age_group = ""
         subject = ""
 
-        for line in data:
-            if line.startswith("AGE:"):
-                age_group = normalize(line.replace("AGE:", ""))
-            elif line.startswith("SUBJECT:"):
-                subject = normalize(line.replace("SUBJECT:", ""))
-            elif line == "START":
-                pass
+        for part in raw.replace("\n", " ").split():
+            if part.startswith("AGE:"):
+                age_group = normalize(part.replace("AGE:", ""))
+            elif part.startswith("SUBJECT:"):
+                subject = normalize(part.replace("SUBJECT:", ""))
 
         print(f"[CONTEXT] {age_group} | {subject}")
 
         # =========================
-        # Load & filter questions
+        # Load Excel
         # =========================
-        if not os.path.exists(DATA_FILE):
-            raise FileNotFoundError(DATA_FILE)
-
-        df = pd.read_csv(DATA_FILE)
+        df = pd.read_excel(DATA_FILE, engine="openpyxl")
 
         df["age_group"] = df["age_group"].apply(normalize)
         df["subject"] = df["subject"].apply(normalize)
+
+        print("[DEBUG] Available age groups:", df["age_group"].unique())
+        print("[DEBUG] Available subjects:", df["subject"].unique())
 
         questions = df[
             (df["age_group"] == age_group) &
@@ -74,7 +116,7 @@ while True:
             continue
 
         # =========================
-        # Start test
+        # Run test
         # =========================
         score = 0
         start_time = time.time()
@@ -85,19 +127,29 @@ while True:
             q_start = time.time()
 
             print(f"\nQ: {q['question']}")
-            print(f"A) {q['a']}  B) {q['b']}  C) {q['c']}")
+            print(f"A) {q['A']}  B) {q['B']}  C) {q['C']}")
 
-            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                s.bind(("127.0.0.1", 6000))
-                s.listen(1)
-                conn, _ = s.accept()
+            marker = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            marker.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            marker.bind(("127.0.0.1", 6000))
+            marker.listen(1)
+            marker.settimeout(1.0)
 
-                with conn:
-                    answer = conn.recv(1024).decode().strip()
+            while RUNNING:
+                try:
+                    conn, _ = marker.accept()
+                    break
+                except socket.timeout:
+                    continue
+
+            with conn:
+                answer = conn.recv(1024).decode(errors="ignore").strip()
+
+            marker.close()
 
             elapsed = round(time.time() - q_start, 2)
 
-            if answer.upper() == q["correct"].upper():
+            if answer.upper() == str(q["correct"]).upper():
                 score += 1
                 result = "Correct"
             else:
@@ -114,9 +166,6 @@ while True:
         print(f"\nFINAL SCORE: {score}/{len(questions)}")
         print(f"TIME: {total_time}s | ACCURACY: {accuracy}%")
 
-        # =========================
-        # Log results
-        # =========================
         os.makedirs(os.path.dirname(RESULTS_FILE), exist_ok=True)
 
         log = {
@@ -137,6 +186,9 @@ while True:
         )
 
         print("[STUDENT] Ready for next session\n")
+
+    except KeyboardInterrupt:
+        shutdown()
 
     except Exception as e:
         print(f"[ERROR] {e}")

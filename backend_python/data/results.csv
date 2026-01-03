@@ -1,3 +1,0 @@
-result_id,student_id,question_id,selected_option,is_correct,time_seconds
-1,1,1,B,True,2.0
-2,1,1,A,True,12.35

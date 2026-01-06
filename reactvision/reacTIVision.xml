@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+<reactivision>
+    <!-- TUIO output -->
+    <tuio host="127.0.0.1" port="3334" />
+    <!-- IMPORTANT: use default camera handling -->
+    <camera />
+    <!-- Correct fiducial engine and tree -->
+    <fiducial engine="amoeba" />
+    <!-- Less aggressive thresholding -->
+    <threshold gradient="16" tile="8" threads="max" />
+    <!-- Display output -->
+    <image display="dest" equalize="true" fullscreen="false" />
+    <!-- Disable fingers -->
+    <finger size="0" sensitivity="100" />
+</reactivision>

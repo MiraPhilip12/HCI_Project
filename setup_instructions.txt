@@ -1,0 +1,41 @@
+HCI TUIO LEARNING SYSTEM - SETUP GUIDE
+=========================================
+
+1. SYSTEM REQUIREMENTS:
+   - Windows 10/11
+   - Python 3.8 or higher
+   - ReactVision (from sourceforge.net)
+   - Webcam (720p minimum)
+   - Physical table surface
+
+2. INSTALLATION:
+   a. Extract project to: C:\HCI_TUIO_Project
+   b. Run start_system.bat (installs dependencies)
+   c. Download ReactVision from: http://reactivision.sourceforge.net/
+   d. Extract ReactVision to: C:\ReactVision
+
+3. MARKER PREPARATION:
+   a. Print default ReactVision marker sheet
+   b. Cut out markers (use IDs 0-9, 50-53)
+   c. Glue to cardboard/plastic tiles
+   d. Marker size: 80mm x 80mm
+
+4. PHYSICAL SETUP:
+   a. Place camera 2-3 feet above table
+   b. Ensure even lighting (no shadows)
+   c. Define table areas:
+      - Left side: Answer area
+      - Top-right: Confirm area
+      - Top-left: Navigation area
+
+5. STARTUP SEQUENCE:
+   1. Run start_system.bat
+   2. Start ReactVision, load config.xml
+   3. Open browser to http://localhost:5001
+   4. Teacher: Configure and start test
+   5. Student: Answer with physical markers
+
+6. TROUBLESHOOTING:
+   - Markers not detected: Adjust lighting/camera height
+   - TUIO not connecting: Check port 3333 in ReactVision
+   - Server errors: Check Python packages installation
